@@ -2,39 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Daily Lucky Number Design System - Fortune & Mystical Theme */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 225 15% 6%;
+    --foreground: 45 100% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 225 25% 8%;
+    --card-foreground: 45 100% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 225 25% 8%;
+    --popover-foreground: 45 100% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 45 100% 60%;
+    --primary-foreground: 225 25% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 270 50% 25%;
+    --secondary-foreground: 45 100% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 225 20% 15%;
+    --muted-foreground: 45 30% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 280 80% 50%;
+    --accent-foreground: 45 100% 95%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 225 20% 20%;
+    --input: 225 20% 15%;
+    --ring: 45 100% 60%;
+
+    /* Lucky Number Specific Colors */
+    --golden: 45 100% 60%;
+    --golden-light: 45 100% 80%;
+    --golden-dark: 45 100% 40%;
+    --mystical: 280 80% 50%;
+    --mystical-light: 280 60% 70%;
+    --fortune: 150 80% 40%;
+    --fortune-light: 150 60% 60%;
+
+    /* Gradients */
+    --gradient-golden: linear-gradient(135deg, hsl(var(--golden)) 0%, hsl(var(--golden-light)) 100%);
+    --gradient-mystical: linear-gradient(135deg, hsl(var(--mystical)) 0%, hsl(var(--accent)) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(225 20% 10%) 50%, hsl(var(--background)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)) 0%, hsl(225 30% 12%) 100%);
+
+    /* Shadows */
+    --shadow-golden: 0 10px 30px -10px hsl(var(--golden) / 0.3);
+    --shadow-mystical: 0 10px 30px -10px hsl(var(--mystical) / 0.3);
+    --shadow-elegant: 0 20px 40px -10px hsl(var(--background) / 0.8);
 
     --radius: 0.5rem;
 

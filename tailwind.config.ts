@@ -47,6 +47,20 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Lucky Number Theme Colors
+        golden: {
+          DEFAULT: "hsl(var(--golden))",
+          light: "hsl(var(--golden-light))",
+          dark: "hsl(var(--golden-dark))",
+        },
+        mystical: {
+          DEFAULT: "hsl(var(--mystical))",
+          light: "hsl(var(--mystical-light))",
+        },
+        fortune: {
+          DEFAULT: "hsl(var(--fortune))",
+          light: "hsl(var(--fortune-light))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -57,6 +71,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      backgroundImage: {
+        'gradient-golden': 'var(--gradient-golden)',
+        'gradient-mystical': 'var(--gradient-mystical)',
+        'gradient-hero': 'var(--gradient-hero)',
+        'gradient-card': 'var(--gradient-card)',
+      },
+      boxShadow: {
+        'golden': 'var(--shadow-golden)',
+        'mystical': 'var(--shadow-mystical)',
+        'elegant': 'var(--shadow-elegant)',
       },
       borderRadius: {
         lg: "var(--radius)",
