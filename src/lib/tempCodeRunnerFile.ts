@@ -1,0 +1,1 @@
+const q = query(numbersCol, where("date", "==", today), orderBy("revealTime", "asc"));

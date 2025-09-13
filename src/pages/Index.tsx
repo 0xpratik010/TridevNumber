@@ -1,26 +1,15 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LuckyNumberDisplay } from "@/components/LuckyNumberDisplay";
 import { PastNumbers } from "@/components/PastNumbers";
-import { AdminLogin } from "@/components/AdminLogin";
-import { AdminDashboard } from "@/components/AdminDashboard";
 import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 
-type View = "home" | "past" | "admin-login" | "admin-dashboard";
+type View = "home" | "past";
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>("home");
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-
-  const handleAdminLogin = () => {
-    setIsAdminLoggedIn(true);
-    setCurrentView("admin-dashboard");
-  };
-
-  const handleAdminLogout = () => {
-    setIsAdminLoggedIn(false);
-    setCurrentView("home");
-  };
+  const navigate = useNavigate();
 
   const renderView = () => {
     switch (currentView) {
@@ -28,10 +17,6 @@ const Index = () => {
         return <LuckyNumberDisplay onViewPast={() => setCurrentView("past")} />;
       case "past":
         return <PastNumbers onBack={() => setCurrentView("home")} />;
-      case "admin-login":
-        return <AdminLogin onLogin={handleAdminLogin} />;
-      case "admin-dashboard":
-        return <AdminDashboard onLogout={handleAdminLogout} />;
       default:
         return <LuckyNumberDisplay onViewPast={() => setCurrentView("past")} />;
     }
@@ -42,7 +27,7 @@ const Index = () => {
       {/* Admin Access Button - Only show on home and past views */}
       {(currentView === "home" || currentView === "past") && (
         <Button
-          onClick={() => setCurrentView("admin-login")}
+          onClick={() => navigate("/admin")}
           variant="ghost"
           size="sm"
           className="fixed top-4 right-4 z-50 text-muted-foreground hover:text-golden transition-colors"

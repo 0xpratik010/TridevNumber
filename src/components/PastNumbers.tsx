@@ -1,38 +1,37 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Calendar, TrendingUp } from "lucide-react";
+import { ArrowLeft, Calendar, TrendingUp, Loader2 } from "lucide-react";
+import { getPastNumbers, LuckyNumber, parseLocalDate } from "@/lib/api";
 
 interface PastNumbersProps {
   onBack: () => void;
 }
 
-// Mock data - replace with real API calls
-const mockPastNumbers = [
-  { date: "2024-01-07", number: 777, revealTime: "14:00" },
-  { date: "2024-01-06", number: 342, revealTime: "14:00" },
-  { date: "2024-01-05", number: 891, revealTime: "14:00" },
-  { date: "2024-01-04", number: 156, revealTime: "14:00" },
-  { date: "2024-01-03", number: 623, revealTime: "14:00" },
-  { date: "2024-01-02", number: 445, revealTime: "14:00" },
-  { date: "2024-01-01", number: 999, revealTime: "14:00" },
-];
-
 export const PastNumbers = ({ onBack }: PastNumbersProps) => {
   const [filter, setFilter] = useState("week");
-  const [filteredNumbers, setFilteredNumbers] = useState(mockPastNumbers);
+  const [filteredNumbers, setFilteredNumbers] = useState<LuckyNumber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNumbers = async () => {
+      setIsLoading(true);
+      const data = await getPastNumbers(filter);
+      setFilteredNumbers(data);
+      setIsLoading(false);
+    };
+
+    fetchNumbers();
+  }, [filter]);
 
   const handleFilterChange = (value: string) => {
     setFilter(value);
-    // In real app: filter data based on selection
-    console.log("Filtering by:", value);
-    setFilteredNumbers(mockPastNumbers);
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const date = parseLocalDate(dateString);
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -95,26 +94,36 @@ export const PastNumbers = ({ onBack }: PastNumbersProps) => {
                   <TableHead className="text-foreground font-semibold">Reveal Time</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredNumbers.map((entry, index) => (
-                  <TableRow
-                    key={entry.date}
-                    className="border-border/20 hover:bg-muted/10 transition-colors"
-                  >
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(entry.date)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-2xl font-bold text-golden bg-gradient-golden bg-clip-text text-transparent">
-                        {entry.number}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono">
-                      {entry.revealTime}
+              {isLoading ? (
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      <Loader2 className="mx-auto h-8 w-8 animate-spin text-mystical" />
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
+                </TableBody>
+              ) : (
+                <TableBody>
+                  {filteredNumbers.map((entry) => (
+                    <TableRow
+                      key={entry.id}
+                      className="border-border/20 hover:bg-muted/10 transition-colors"
+                    >
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(entry.date)}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-2xl font-bold text-golden bg-gradient-golden bg-clip-text text-transparent">
+                          {entry.number}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground font-mono">
+                        {entry.revealTime}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              )}
             </Table>
           </div>
         </Card>

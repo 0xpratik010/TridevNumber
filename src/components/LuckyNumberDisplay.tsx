@@ -2,39 +2,60 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Clock, Star } from "lucide-react";
+import { getTodayNumber, isRevealTime, LuckyNumber } from "@/lib/api";
 
 interface LuckyNumberDisplayProps {
   onViewPast: () => void;
 }
 
-// Mock data - replace with real API calls
-const mockRevealTime = "14:00";
-const mockTodayNumber = 777;
-
 export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [luckyNumberData, setLuckyNumberData] = useState<LuckyNumber | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isRevealed, setIsRevealed] = useState(false);
 
+  const fetchNumber = async () => {
+    // Don't set isLoading to true on subsequent re-fetches to avoid UI flicker
+    const data = await getTodayNumber();
+    setLuckyNumberData(data);
+    if (data) {
+      // This will correctly set the state for the new number (revealed or not)
+      setIsRevealed(isRevealTime(data.revealTime));
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
+    setIsLoading(true);
+    fetchNumber();
+    // Intentionally empty dependency array to run only once on mount.
+    // Subsequent fetches are handled by the timer.
+  }, []);
+
+  useEffect(() => {
+    // Don't run the timer if we are still on the initial load.
+    if (isLoading) {
+      return;
+    }
+
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
-
-    // Check if current time is past reveal time
-    const now = new Date();
-    const revealDateTime = new Date();
-    const [hours, minutes] = mockRevealTime.split(':').map(Number);
-    revealDateTime.setHours(hours, minutes, 0, 0);
-    
-    setIsRevealed(now >= revealDateTime);
+      if (luckyNumberData && !isRevealed) {
+        // If the current number's reveal time has passed, fetch the next one.
+        if (isRevealTime(luckyNumberData.revealTime)) {
+          fetchNumber();
+        }
+      }
+    }, 1000); // Check every second
 
     return () => clearInterval(timer);
-  }, []);
+  }, [luckyNumberData, isRevealed, isLoading]);
 
   const handleReveal = () => {
     if (!isRevealed) return;
-    // In real app: trigger reveal animation and API call
-    console.log("Revealing today's lucky number:", mockTodayNumber);
+    // In a real app, you might trigger an animation here.
+    // The number is already fetched.
+    console.log("Revealing today's lucky number:", luckyNumberData?.number);
   };
 
   return (
@@ -55,7 +76,16 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
         {/* Main Card */}
         <Card className="bg-gradient-card border-border/50 backdrop-blur-sm shadow-elegant">
           <div className="p-8 text-center space-y-6">
-            {!isRevealed ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center h-48">
+                <Clock className="w-16 h-16 text-mystical animate-spin" />
+              </div>
+            ) : !luckyNumberData ? (
+              <div className="h-48 flex flex-col justify-center items-center">
+                <h2 className="text-2xl font-semibold text-foreground">No number for today!</h2>
+                <p className="text-muted-foreground">Please check back later.</p>
+              </div>
+            ) : !isRevealed ? (
               <>
                 <div className="flex justify-center">
                   <Clock className="w-16 h-16 text-mystical animate-pulse" />
@@ -63,7 +93,7 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
                 <div className="space-y-2">
                   <h2 className="text-2xl font-semibold text-foreground">Not Yet Time!</h2>
                   <p className="text-muted-foreground">
-                    Wait until <span className="text-golden font-bold">{mockRevealTime}</span> to see today's lucky number
+                    Wait until <span className="text-golden font-bold">{luckyNumberData.revealTime}</span> to see today's lucky number
                   </p>
                 </div>
                 <div className="bg-muted/30 rounded-lg p-4">
@@ -82,7 +112,7 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
                 <div className="space-y-4">
                   <div className="relative">
                     <div className="text-6xl font-bold text-golden bg-gradient-golden bg-clip-text text-transparent animate-pulse">
-                      {mockTodayNumber}
+                      {luckyNumberData.number}
                     </div>
                     <div className="absolute inset-0 bg-golden/20 blur-xl rounded-full"></div>
                   </div>
@@ -94,7 +124,7 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
 
             <Button
               onClick={handleReveal}
-              disabled={!isRevealed}
+              disabled={!isRevealed || isLoading || !luckyNumberData}
               variant={isRevealed ? "default" : "secondary"}
               size="lg"
               className="w-full bg-gradient-golden hover:shadow-golden transition-all duration-300 text-primary-foreground font-semibold"
@@ -107,7 +137,7 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
               ) : (
                 <>
                   <Clock className="mr-2 h-5 w-5" />
-                  Wait for {mockRevealTime}
+                  Wait for {luckyNumberData?.revealTime || '...'}
                 </>
               )}
             </Button>

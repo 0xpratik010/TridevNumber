@@ -1,134 +1,156 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Settings, Plus, Edit, Trash2, LogOut, Calendar } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  LogOut,
+  Calendar,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getPastNumbers,
+  addLuckyNumber,
+  updateLuckyNumber,
+  deleteLuckyNumber,
+  LuckyNumber,
+  getLocalDateString,
+  parseLocalDate,
+} from "@/lib/api";
+import LuckyNumberForm from "./LuckyNumberForm";
 
 interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-// Mock data - replace with real API calls
-const mockNumbers = [
-  { id: 1, date: "2024-01-07", number: 777, revealTime: "14:00" },
-  { id: 2, date: "2024-01-06", number: 342, revealTime: "14:00" },
-  { id: 3, date: "2024-01-05", number: 891, revealTime: "14:00" },
-];
+const getInitialFormState = () => ({
+  date: getLocalDateString(new Date()),
+  number: "",
+  revealTime: "14:00",
+});
 
 export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
-  const [numbers, setNumbers] = useState(mockNumbers);
+  const [numbers, setNumbers] = useState<LuckyNumber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingNumber, setEditingNumber] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    number: "",
-    revealTime: "14:00"
-  });
+  const [editingNumber, setEditingNumber] = useState<LuckyNumber | null>(null);
+  const [formData, setFormData] = useState(getInitialFormState());
   const { toast } = useToast();
+
+  const fetchNumbers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getPastNumbers("all");
+      setNumbers(data);
+    } catch (err) {
+      toast({ title: "Failed to fetch", description: "Could not load numbers" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNumbers();
+  }, []);
+
+  const sanitizeNumber = (raw: string) => {
+    // remove non-digits, limit to 3 characters
+    return raw.replace(/\D/g, "").slice(0, 3);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (editingNumber) {
-      // Update existing number
-      setNumbers(prev => prev.map(num => 
-        num.id === editingNumber.id 
-          ? { ...num, ...formData, number: parseInt(formData.number) }
-          : num
-      ));
+
+    const numeric = parseInt(formData.number, 10);
+    if (Number.isNaN(numeric) || numeric < 1) {
       toast({
-        title: "Number Updated",
-        description: "Lucky number has been updated successfully",
+        title: "Invalid number",
+        description: "Please enter a valid numeric lucky number (1 - 999).",
       });
-      setEditingNumber(null);
-    } else {
-      // Add new number
-      const newNumber = {
-        id: Date.now(),
-        ...formData,
-        number: parseInt(formData.number)
-      };
-      setNumbers(prev => [newNumber, ...prev]);
-      toast({
-        title: "Number Added",
-        description: "New lucky number has been added successfully",
-      });
-      setIsAddDialogOpen(false);
+      return;
     }
-    
-    setFormData({ date: new Date().toISOString().split('T')[0], number: "", revealTime: "14:00" });
+
+    try {
+      setIsLoading(true);
+      if (editingNumber) {
+        await updateLuckyNumber(editingNumber.id, {
+          ...formData,
+          number: numeric,
+        });
+        toast({
+          title: "Number Updated",
+          description: "Lucky number has been updated successfully",
+        });
+        setEditingNumber(null);
+      } else {
+        await addLuckyNumber({
+          ...formData,
+          number: numeric,
+        });
+        toast({
+          title: "Number Added",
+          description: "New lucky number has been added successfully",
+        });
+        setIsAddDialogOpen(false);
+      }
+      setFormData(getInitialFormState());
+      await fetchNumbers();
+    } catch (err) {
+      toast({
+        title: "Save failed",
+        description: "Could not save lucky number. Try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEdit = (number: any) => {
+  const handleEdit = (number: LuckyNumber) => {
     setEditingNumber(number);
     setFormData({
       date: number.date,
       number: number.number.toString(),
-      revealTime: number.revealTime
+      revealTime: number.revealTime,
     });
   };
 
-  const handleDelete = (id: number) => {
-    setNumbers(prev => prev.filter(num => num.id !== id));
-    toast({
-      title: "Number Deleted",
-      description: "Lucky number has been deleted successfully",
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteLuckyNumber(id);
+      toast({
+        title: "Number Deleted",
+        description: "Lucky number has been deleted successfully",
+      });
+      await fetchNumbers();
+    } catch (err) {
+      toast({
+        title: "Delete failed",
+        description: "Could not delete the number. Try again.",
+      });
+    }
   };
 
-  const NumberForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="date">Date</Label>
-        <Input
-          id="date"
-          type="date"
-          value={formData.date}
-          onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-          className="bg-muted/30 border-border/50"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="number">Lucky Number</Label>
-        <Input
-          id="number"
-          type="number"
-          value={formData.number}
-          onChange={(e) => setFormData(prev => ({ ...prev, number: e.target.value }))}
-          className="bg-muted/30 border-border/50"
-          placeholder="Enter lucky number"
-          min="1"
-          max="999"
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="revealTime">Reveal Time</Label>
-        <Input
-          id="revealTime"
-          type="time"
-          value={formData.revealTime}
-          onChange={(e) => setFormData(prev => ({ ...prev, revealTime: e.target.value }))}
-          className="bg-muted/30 border-border/50"
-          required
-        />
-      </div>
-      
-      <Button
-        type="submit"
-        className="w-full bg-gradient-golden hover:shadow-golden transition-all duration-300"
-      >
-        {editingNumber ? "Update Number" : "Add Number"}
-      </Button>
-    </form>
-  );
+  
 
   return (
     <div className="min-h-screen bg-gradient-hero p-4">
@@ -162,7 +184,13 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               <DialogHeader>
                 <DialogTitle className="text-foreground">Add New Lucky Number</DialogTitle>
               </DialogHeader>
-              <NumberForm />
+              <LuckyNumberForm
+                formData={formData}
+                setFormData={setFormData}
+                handleSubmit={handleSubmit}
+                isLoading={isLoading}
+                isEditing={false}
+              />
             </DialogContent>
           </Dialog>
         </div>
@@ -174,7 +202,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               <Calendar className="w-5 h-5 text-mystical" />
               <h2 className="text-xl font-semibold text-foreground">Manage Lucky Numbers</h2>
             </div>
-            
+
             <Table>
               <TableHeader>
                 <TableRow className="border-border/30 hover:bg-muted/20">
@@ -184,57 +212,82 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   <TableHead className="text-foreground font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {numbers.map((entry) => (
-                  <TableRow
-                    key={entry.id}
-                    className="border-border/20 hover:bg-muted/10 transition-colors"
-                  >
-                    <TableCell className="text-muted-foreground">
-                      {new Date(entry.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-2xl font-bold text-golden bg-gradient-golden bg-clip-text text-transparent">
-                        {entry.number}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono">
-                      {entry.revealTime}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleEdit(entry)}
-                          variant="outline"
-                          size="sm"
-                          className="border-mystical/30 hover:bg-mystical/10 text-mystical hover:text-mystical"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(entry.id)}
-                          variant="outline"
-                          size="sm"
-                          className="border-destructive/30 hover:bg-destructive/10 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+              {isLoading ? (
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      <Loader2 className="mx-auto h-8 w-8 animate-spin text-mystical" />
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
+                </TableBody>
+              ) : (
+                <TableBody>
+                  {numbers.map((entry) => (
+                    <TableRow
+                      key={entry.id}
+                      className="border-border/20 hover:bg-muted/10 transition-colors"
+                    >
+                      <TableCell className="text-muted-foreground">
+                        {
+                          // Using parseLocalDate avoids timezone issues where `new Date(YYYY-MM-DD)`
+                          // is parsed as UTC and can result in the previous day.
+                          parseLocalDate(entry.date).toLocaleDateString()
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-2xl font-bold text-golden bg-gradient-golden bg-clip-text text-transparent">
+                          {entry.number}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground font-mono">
+                        {entry.revealTime}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={() => handleEdit(entry)}
+                            variant="outline"
+                            size="sm"
+                            className="border-mystical/30 hover:bg-mystical/10 text-mystical hover:text-mystical"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(entry.id)}
+                            variant="outline"
+                            size="sm"
+                            className="border-destructive/30 hover:bg-destructive/10 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              )}
             </Table>
           </div>
         </Card>
 
         {/* Edit Dialog */}
-        <Dialog open={!!editingNumber} onOpenChange={() => setEditingNumber(null)}>
+        <Dialog
+          open={!!editingNumber}
+          onOpenChange={(open) => {
+            if (!open) setEditingNumber(null);
+          }}
+        >
           <DialogContent className="bg-card border-border/50">
             <DialogHeader>
               <DialogTitle className="text-foreground">Edit Lucky Number</DialogTitle>
             </DialogHeader>
-            <NumberForm />
+            <LuckyNumberForm
+              formData={formData}
+              setFormData={setFormData}
+              handleSubmit={handleSubmit}
+              isLoading={isLoading}
+              isEditing={true}
+            />
           </DialogContent>
         </Dialog>
       </div>
