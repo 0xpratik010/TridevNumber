@@ -17,8 +17,8 @@ const WINDOW_MINUTES = 10;
 
 
 export const AdminLogin = ({ onLogin, onBack }: AdminLoginProps) => {
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
