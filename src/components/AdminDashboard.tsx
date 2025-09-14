@@ -95,7 +95,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       if (editingNumber) {
         await updateLuckyNumber(editingNumber.id, {
           ...formData,
-          number: numeric,
+          // number: numeric,
         });
         toast({
           title: "Number Updated",
@@ -105,7 +105,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       } else {
         await addLuckyNumber({
           ...formData,
-          number: numeric,
+          // number: numeric,
         });
         toast({
           title: "Number Added",

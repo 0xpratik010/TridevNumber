@@ -2,14 +2,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { LuckyNumber } from "@/lib/api";
 
 interface LuckyNumberFormProps {
-  formData: {
-    date: string;
-    number: string;
-    revealTime: string;
-  };
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  // Use Omit to represent the form data for a new lucky number
+  formData: Omit<LuckyNumber, "id">;
+  // Use a more specific type for better type safety
+  setFormData: React.Dispatch<React.SetStateAction<Omit<LuckyNumber, "id">>>;
   handleSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
   isEditing: boolean;
@@ -23,7 +22,8 @@ export default function LuckyNumberForm({
   isEditing,
 }: LuckyNumberFormProps) {
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 7);
+    // const value = e.target.value.replace(/\D/g, "").slice(0, 7);
+    const value = e.target.value;
     setFormData((prev) => ({ ...prev, number: value }));
   };
 
@@ -35,7 +35,7 @@ export default function LuckyNumberForm({
           id="date"
           type="date"
           value={formData.date}
-          onChange={(e) => setFormData((prev: any) => ({ ...prev, date: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
           className="bg-muted/30 border-border/50"
           required
         />
@@ -45,12 +45,12 @@ export default function LuckyNumberForm({
         <Label htmlFor="number">Lucky Number</Label>
         <Input
           id="number"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          inputMode="text"
+          pattern="[0-9\-]*"
           value={formData.number.toString()}
           onChange={handleNumberChange}
           placeholder="Enter lucky number"
-          maxLength={7}
+          maxLength={11}
           required
         />
       </div>
@@ -61,7 +61,7 @@ export default function LuckyNumberForm({
           id="revealTime"
           type="time"
           value={formData.revealTime}
-          onChange={(e) => setFormData((prev: any) => ({ ...prev, revealTime: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, revealTime: e.target.value }))}
           className="bg-muted/30 border-border/50"
           required
         />

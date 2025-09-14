@@ -17,7 +17,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 export interface LuckyNumber {
   id: string; // Firestore document ID
   date: string;
-  number: number;
+  number: string;
   revealTime: string;
 }
 
