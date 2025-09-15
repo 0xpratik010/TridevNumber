@@ -68,6 +68,7 @@ export const getTodayNumber = async (): Promise<LuckyNumber | null> => {
     // Sort the numbers by reveal time ascending
     const allTodayNumbers = querySnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber))
+      .map(doc => ({ ...doc.data(), id: doc.id } as LuckyNumber))
       .sort((a, b) => a.revealTime.localeCompare(b.revealTime));
 
     // Find the first number that hasn't been revealed yet.
@@ -100,6 +101,7 @@ export const getPastNumbers = async (filter: string = "week"): Promise<LuckyNumb
   try {
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
+    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as LuckyNumber));
   } catch (error) {
     console.error("Error fetching past numbers:", error);
     return [];

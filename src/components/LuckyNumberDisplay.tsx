@@ -69,8 +69,10 @@ export const LuckyNumberDisplay = ({ onViewPast }: LuckyNumberDisplayProps) => {
               <Sparkles className="w-6 h-6 text-golden-light absolute -top-1 -right-1 animate-ping" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-foreground">Daily Lucky Number</h1>
-          <p className="text-muted-foreground">Your fortune awaits...</p>
+          <h1 className="text-2xl font-bold text-foreground">Trideo Day</h1>
+          <p className="text-muted-foreground">Morning 11:00 am - 12:00 pm</p>
+          <h1 className="text-2xl font-bold text-foreground">Trideo Night </h1>
+          <p className="text-muted-foreground">Evening 7:00 pm - 8:00 pm</p>
         </div>
 
         {/* Main Card */}
