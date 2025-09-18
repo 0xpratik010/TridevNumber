@@ -25,16 +25,18 @@ const Index = () => {
   return (
     <div className="relative">
       {/* Admin Access Button - Only show on home and past views */}
-      {(currentView === "home" || currentView === "past") && (
-        <Button
-          onClick={() => navigate("/admin")}
-          variant="ghost"
-          size="sm"
-          className="fixed top-4 right-4 z-50 text-muted-foreground hover:text-golden transition-colors"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      )}
+      {(currentView === "home" || currentView === "past") 
+      // && (
+      //   <Button
+      //     onClick={() => navigate("/admin")}
+      //     variant="ghost"
+      //     size="sm"
+      //     className="fixed top-4 right-4 z-50 text-muted-foreground hover:text-golden transition-colors"
+      //   >
+      //     <Settings className="h-4 w-4" />
+      //   </Button>
+      // )
+      }
       
       {renderView()}
     </div>
