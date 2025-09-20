@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  getPastNumbers,
+  getAllNumbers,
   addLuckyNumber,
   updateLuckyNumber,
   deleteLuckyNumber,
@@ -47,6 +47,7 @@ const getInitialFormState = () => ({
   date: getLocalDateString(new Date()),
   number: "",
   revealTime: "14:00",
+  dnflag: 0,
 });
 
 export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
@@ -60,7 +61,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const fetchNumbers = async () => {
     setIsLoading(true);
     try {
-      const data = await getPastNumbers("all");
+      const data = await getAllNumbers();
       setNumbers(data);
     } catch (err) {
       toast({ title: "Failed to fetch", description: "Could not load numbers" });
@@ -131,6 +132,7 @@ export const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       date: number.date,
       number: number.number.toString(),
       revealTime: number.revealTime,
+      dnflag: number.dnflag,
     });
   };
 

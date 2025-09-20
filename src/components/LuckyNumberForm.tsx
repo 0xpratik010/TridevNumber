@@ -3,6 +3,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { LuckyNumber } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LuckyNumberFormProps {
   // Use Omit to represent the form data for a new lucky number
@@ -65,6 +72,24 @@ export default function LuckyNumberForm({
           className="bg-muted/30 border-border/50"
           required
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Day/Night</Label>
+        <Select
+          value={formData.dnflag.toString()}
+          onValueChange={(value) =>
+            setFormData((prev) => ({ ...prev, dnflag: parseInt(value, 10) }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select Day or Night" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Day</SelectItem>
+            <SelectItem value="1">Night</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Button

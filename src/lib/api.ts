@@ -19,6 +19,7 @@ export interface LuckyNumber {
   date: string;
   number: string;
   revealTime: string;
+  dnflag: number; // 0 for day, 1 for night
 }
 
 export const authenticateAdmin = async (email: string, password: string): Promise<boolean> => {
@@ -52,37 +53,23 @@ export const parseLocalDate = (dateString: string): Date => {
   return new Date(year, month - 1, day);
 };
 
-export const getTodayNumber = async (): Promise<LuckyNumber | null> => {
+export const getTodayNumber = async (dnflag: number): Promise<LuckyNumber | null> => {
   const today = getLocalDateString(new Date());
   const numbersCol = collection(db, "luckyNumbers");
-  // Get all of today's numbers.
-  // We will sort them on the client to avoid needing a composite index in Firestore.
-  const q = query(numbersCol, where("date", "==", today));
+  // This query requires a composite index on `date` and `dnflag` in Firestore.
+  const q = query(numbersCol, where("date", "==", today), where("dnflag", "==", dnflag));
 
   try {
     const querySnapshot = await getDocs(q);
+    console.log(`Query snapshot for dnflag ${dnflag}:`, querySnapshot.docs);
     if (querySnapshot.empty) {
       return null;
     }
 
-    // Sort the numbers by reveal time ascending
-    const allTodayNumbers = querySnapshot.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber))
-      .map(doc => ({ ...doc.data(), id: doc.id } as LuckyNumber))
-      .sort((a, b) => a.revealTime.localeCompare(b.revealTime));
-
-    // Find the first number that hasn't been revealed yet.
-    const nextNumber = allTodayNumbers.find(num => !isRevealTime(num.revealTime));
-
-    if (nextNumber) {
-      // We found an upcoming number for today.
-      return nextNumber;
-    } else {
-      // All numbers for today have been revealed, so show the last one of the day.
-      return allTodayNumbers[allTodayNumbers.length - 1];
-    }
+    const number = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as LuckyNumber;
+    return number;
   } catch (error) {
-    console.error("Error fetching today's number:", error);
+    console.error(`Error fetching today's number for dnflag ${dnflag}:`, error);
     return null;
   }
 };
@@ -100,10 +87,35 @@ export const getPastNumbers = async (filter: string = "week"): Promise<LuckyNumb
 
   try {
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
-    return querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as LuckyNumber));
+    const numbers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
+    
+    const today = getLocalDateString(new Date());
+    const revealedNumbers = numbers.filter(num => {
+        if (num.date < today) {
+            return true;
+        }
+        if (num.date === today) {
+            return isRevealTime(num.revealTime);
+        }
+        return false;
+    });
+
+    return revealedNumbers;
   } catch (error) {
     console.error("Error fetching past numbers:", error);
+    return [];
+  }
+};
+
+export const getAllNumbers = async (): Promise<LuckyNumber[]> => {
+  const numbersCol = collection(db, "luckyNumbers");
+  const q = query(numbersCol, orderBy("date", "desc"));
+
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
+  } catch (error) {
+    console.error("Error fetching all numbers:", error);
     return [];
   }
 };
