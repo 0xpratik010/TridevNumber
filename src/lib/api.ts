@@ -14,6 +14,8 @@ import {
 } from "firebase/firestore";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
+const COLLECTION_NAME = import.meta.env.VITE_LUCKY_NUMBERS_COLLECTION || 'luckyNumbers';
+
 export interface LuckyNumber {
   id: string; // Firestore document ID
   date: string;
@@ -55,7 +57,7 @@ export const parseLocalDate = (dateString: string): Date => {
 
 export const getTodayNumber = async (dnflag: number): Promise<LuckyNumber | null> => {
   const today = getLocalDateString(new Date());
-  const numbersCol = collection(db, "luckyNumbers");
+  const numbersCol = collection(db, COLLECTION_NAME);
   // This query requires a composite index on `date` and `dnflag` in Firestore.
   const q = query(numbersCol, where("date", "==", today), where("dnflag", "==", dnflag));
 
@@ -74,33 +76,36 @@ export const getTodayNumber = async (dnflag: number): Promise<LuckyNumber | null
   }
 };
 
-export const getPastNumbers = async (filter: string = "week"): Promise<LuckyNumber[]> => {
-  const numbersCol = collection(db, "luckyNumbers");
-  let q;
+export const getPastNumbers = async (dnflag: number, filter: "all" | "week" | "month" = "all"): Promise<LuckyNumber[]> => {
+  const numbersCol = collection(db, COLLECTION_NAME);
+  const today = getLocalDateString(new Date());
 
-  if (filter === "all") {
-    q = query(numbersCol, orderBy("date", "desc"));
-  } else {
-    // This is a simplified filter. A real implementation would use date ranges.
-    q = query(numbersCol, orderBy("date", "desc"), limit(filter === "week" ? 7 : 30));
+  const queryConstraints = [
+    where("dnflag", "==", dnflag),
+    orderBy("date", "desc")
+  ];
+
+  // A number is considered "past" if its date is before today,
+  // or if its date is today and the reveal time has passed.
+  const isTodayRevealed = isRevealTime((await getTodayNumber(dnflag))?.revealTime || '23:59');
+  const lastIncludedDate = isTodayRevealed ? today : getLocalDateString(new Date(new Date().setDate(new Date().getDate() - 1)));
+
+  queryConstraints.push(where("date", "<=", lastIncludedDate));
+
+  if (filter === "week") {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // This week includes today, so 6 days ago + today = 7 days
+    queryConstraints.push(where("date", ">=", getLocalDateString(sevenDaysAgo)));
+  } else if (filter === "month") {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29); // This month includes today, so 29 days ago + today = 30 days
+    queryConstraints.push(where("date", ">=", getLocalDateString(thirtyDaysAgo)));
   }
+  const q = query(numbersCol, ...queryConstraints);
 
   try {
     const querySnapshot = await getDocs(q);
-    const numbers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
-    
-    const today = getLocalDateString(new Date());
-    const revealedNumbers = numbers.filter(num => {
-        if (num.date < today) {
-            return true;
-        }
-        if (num.date === today) {
-            return isRevealTime(num.revealTime);
-        }
-        return false;
-    });
-
-    return revealedNumbers;
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LuckyNumber));
   } catch (error) {
     console.error("Error fetching past numbers:", error);
     return [];
@@ -108,7 +113,7 @@ export const getPastNumbers = async (filter: string = "week"): Promise<LuckyNumb
 };
 
 export const getAllNumbers = async (): Promise<LuckyNumber[]> => {
-  const numbersCol = collection(db, "luckyNumbers");
+  const numbersCol = collection(db, COLLECTION_NAME);
   const q = query(numbersCol, orderBy("date", "desc"));
 
   try {
@@ -122,7 +127,7 @@ export const getAllNumbers = async (): Promise<LuckyNumber[]> => {
 
 export const addLuckyNumber = async (data: Omit<LuckyNumber, 'id'>): Promise<LuckyNumber> => {
   try {
-    const docRef = await addDoc(collection(db, "luckyNumbers"), {
+    const docRef = await addDoc(collection(db, COLLECTION_NAME), {
       ...data,
       createdAt: Timestamp.now(),
     });
@@ -135,7 +140,7 @@ export const addLuckyNumber = async (data: Omit<LuckyNumber, 'id'>): Promise<Luc
 
 export const updateLuckyNumber = async (id: string, data: Partial<Omit<LuckyNumber, 'id'>>): Promise<void> => {
   try {
-    const numberDoc = doc(db, "luckyNumbers", id);
+    const numberDoc = doc(db, COLLECTION_NAME, id);
     await updateDoc(numberDoc, data);
   } catch (error) {
     console.error("Error updating lucky number:", error);
@@ -145,7 +150,7 @@ export const updateLuckyNumber = async (id: string, data: Partial<Omit<LuckyNumb
 
 export const deleteLuckyNumber = async (id: string): Promise<void> => {
   try {
-    await deleteDoc(doc(db, "luckyNumbers", id));
+    await deleteDoc(doc(db, COLLECTION_NAME, id));
   } catch (error) {
     console.error("Error deleting lucky number:", error);
     throw error;
